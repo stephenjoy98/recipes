@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.stephenjoy.recipes.AppContainer
 import com.stephenjoy.recipes.container
 import com.stephenjoy.recipes.domain.Recipe
+import com.stephenjoy.recipes.domain.SourcePlatform
 import com.stephenjoy.recipes.extract.ImportStep
 import com.stephenjoy.recipes.extract.LinkResolver
 import kotlinx.coroutines.Job
@@ -165,7 +166,8 @@ fun ImportScreen(
 
             if (state.existing == null) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(ImportStep.FETCHING, ImportStep.READING, ImportStep.NUTRITION).forEach { step ->
+                    val hasVideoStep = LinkResolver.platformOf(url) == SourcePlatform.INSTAGRAM
+                    listOfNotNull(ImportStep.FETCHING, ImportStep.WATCHING.takeIf { hasVideoStep }, ImportStep.READING, ImportStep.NUTRITION).forEach { step ->
                         StepRow(step, current = state.step, failed = state.error != null)
                     }
                     AnimatedVisibility(state.running) { LinearWavyProgressIndicator(Modifier.fillMaxWidth()) }

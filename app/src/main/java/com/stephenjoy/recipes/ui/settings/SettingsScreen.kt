@@ -135,6 +135,10 @@ class SettingsViewModel(private val app: Context, private val c: AppContainer) :
         viewModelScope.launch { c.settings.setCloudModel(model) }
     }
 
+    fun setAnalyzeVideos(on: Boolean) {
+        viewModelScope.launch { c.settings.setAnalyzeVideos(on) }
+    }
+
     fun setDynamicColor(on: Boolean) {
         viewModelScope.launch { c.settings.setDynamicColor(on) }
     }
@@ -256,6 +260,12 @@ fun SettingsScreen(onBack: () -> Unit) {
                     else "Cloud Gemini: not configured (needs google-services.json)",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SwitchRow(
+                    "Analyse videos",
+                    "Download Instagram reels to read on-screen text and let cloud Gemini watch them. Uses data.",
+                    settings.analyzeVideos,
+                    vm::setAnalyzeVideos,
                 )
                 HorizontalDivider()
                 Text("Which model reads your recipes", style = MaterialTheme.typography.titleSmall)

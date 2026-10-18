@@ -31,8 +31,14 @@ data class SourceContent(
     val imageUrl: String = "",
     /** A complete recipe found in schema.org markup, if the page had one. */
     val structuredRecipe: Recipe? = null,
+    /** Direct link to the post's video file (Instagram reels), for video analysis. */
+    val videoUrl: String = "",
+    /** Public comments, creator's own first; recipes are often posted there. */
+    val comments: List<PostComment> = emptyList(),
+    /** Text read from video frames (ingredient lists shown on screen). */
+    val onScreenText: String = "",
 ) {
-    val hasText: Boolean get() = (text + transcript).isNotBlank()
+    val hasText: Boolean get() = (text + transcript + onScreenText).isNotBlank() || comments.isNotEmpty()
 }
 
 class ContentFetcher(
@@ -115,10 +121,13 @@ class ContentFetcher(
         var caption = ""
         var author = ""
         var image = ""
+        val pages = mutableListOf<String>()
         if (code != null) {
             // The public embed page carries the full caption without requiring a login.
             runCatching {
-                val doc = Jsoup.parse(get("https://www.instagram.com/p/$code/embed/captioned/"))
+                val html = get("https://www.instagram.com/p/$code/embed/captioned/")
+                pages += html
+                val doc = Jsoup.parse(html)
                 val captionEl = doc.selectFirst(".Caption")
                 captionEl?.select(".CaptionUsername, .CaptionComments")?.remove()
                 caption = captionEl?.wholeText()?.trim().orEmpty()
@@ -127,7 +136,9 @@ class ContentFetcher(
             }
         }
         // Open Graph tags (served to link-preview crawlers) as a fallback / for the thumbnail.
-        val og = runCatching { Jsoup.parse(get(url, userAgent = PREVIEW_UA)) }.getOrNull()
+        val postHtml = runCatching { get(url, userAgent = PREVIEW_UA) }.getOrNull()
+        postHtml?.let { pages += it }
+        val og = postHtml?.let { Jsoup.parse(it) }
         val ogDescription = og?.meta("og:description").orEmpty()
         val ogTitle = og?.meta("og:title").orEmpty()
         if (caption.isBlank()) {
@@ -137,6 +148,17 @@ class ContentFetcher(
         }
         if (author.isBlank()) author = Regex("""^(.*?) on Instagram""").find(ogTitle)?.groupValues?.get(1).orEmpty()
         if (image.isBlank()) image = og?.meta("og:image").orEmpty()
+
+        // The reel's video file, for Gemini to watch (or for on-device text recognition).
+        var video = pages.firstNotNullOfOrNull { InstagramPage.videoUrl(it) }
+        if (video == null && code != null) {
+            video = runCatching { InstagramPage.videoUrl(get("https://www.instagram.com/p/$code/embed/")) }.getOrNull()
+        }
+        // Comments are mostly hidden from logged-out visitors; use whatever the pages expose.
+        val comments = pages.flatMap { InstagramPage.comments(it, author) }.distinct()
+            .filter { it.text.trim() != caption.trim() }
+            .sortedByDescending { it.author.equals(author, ignoreCase = true) }
+            .take(30)
         return SourceContent(
             url = url,
             platform = SourcePlatform.INSTAGRAM,
@@ -144,6 +166,8 @@ class ContentFetcher(
             author = author,
             text = caption,
             imageUrl = image,
+            videoUrl = video.orEmpty(),
+            comments = comments,
         )
     }
 

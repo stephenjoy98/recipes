@@ -41,7 +41,10 @@ object RecipePrompts {
     /** Single-shot prompt for the cloud model: recipe + nutrition, optionally watching the video. */
     fun fullPrompt(source: SourceContent, maxChars: Int, withVideo: Boolean): String = buildString {
         appendLine("You turn social media cooking posts and videos into structured recipes.")
-        if (withVideo) appendLine("Watch the attached video; use what is shown and said as well as the text below.")
+        if (withVideo) {
+            appendLine("Watch the attached video carefully: ingredients and amounts are often only spoken or shown on screen.")
+            appendLine("Combine the video with the caption and comments below; prefer exact amounts stated anywhere.")
+        }
         appendLine("Reply with ONLY JSON matching:")
         appendLine(RECIPE_SCHEMA.dropLast(1) + ""","nutrition":$NUTRITION_SCHEMA}""")
         appendRules()
@@ -83,6 +86,8 @@ object RecipePrompts {
         appendLine("- tags: 3 to 6 lowercase tags (cuisine, diet, main ingredient, technique), no '#'.")
         appendLine("- If times or servings are not stated, estimate sensible values.")
         appendLine("- Ignore hashtags, sponsorships and calls to like/follow.")
+        appendLine("- The recipe may be split between the caption, the video and the creator's comments; merge them.")
+        appendLine("- Use other people's comments only for corrections the creator confirmed; never copy their questions.")
     }
 
     private fun StringBuilder.appendSource(source: SourceContent, maxChars: Int) {
@@ -90,15 +95,44 @@ object RecipePrompts {
         appendLine("Platform: ${source.platform.label}")
         if (source.title.isNotBlank()) appendLine("Title: ${source.title}")
         if (source.author.isNotBlank()) appendLine("Creator: ${source.author}")
-        val textBudget = if (source.transcript.isBlank()) maxChars else maxChars / 2
-        if (source.text.isNotBlank()) {
-            appendLine("Caption/description:")
-            appendLine(source.text.take(textBudget))
+        val comments = source.comments.joinToString("\n") { c ->
+            val mark = if (source.author.isNotBlank() && c.author.equals(source.author, true)) " (creator)" else ""
+            "- ${c.author}$mark: ${c.text.replace('\n', ' ')}"
         }
-        if (source.transcript.isNotBlank()) {
-            appendLine("Transcript:")
-            appendLine(source.transcript.take(maxChars - minOf(source.text.length, textBudget)))
+        val sections = listOf(
+            "Caption/description" to source.text,
+            "Transcript (spoken in the video)" to source.transcript,
+            "Text shown on screen in the video" to source.onScreenText,
+            "Comments (the creator's own comments often contain the full recipe)" to comments,
+        )
+        budgets(sections.map { it.second.length }, maxChars).forEachIndexed { i, budget ->
+            val (label, body) = sections[i]
+            if (body.isNotBlank() && budget > 0) {
+                appendLine("$label:")
+                appendLine(body.take(budget))
+            }
         }
+    }
+
+    /**
+     * Splits [total] characters between sections: short sections keep everything and the
+     * leftover is shared by the longer ones, so a huge caption can't crowd out the comments.
+     */
+    internal fun budgets(lengths: List<Int>, total: Int): List<Int> {
+        val result = IntArray(lengths.size)
+        var remaining = total
+        var open = lengths.indices.filter { lengths[it] > 0 }.sortedBy { lengths[it] }
+        while (open.isNotEmpty()) {
+            val share = remaining / open.size
+            val small = open.filter { lengths[it] <= share }
+            if (small.isEmpty()) {
+                open.forEach { result[it] = share }
+                break
+            }
+            small.forEach { result[it] = lengths[it]; remaining -= lengths[it] }
+            open = open - small.toSet()
+        }
+        return result.toList()
     }
 
     // ------------------------------------------------------------------ parsing

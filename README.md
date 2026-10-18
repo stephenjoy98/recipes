@@ -95,13 +95,19 @@ configured, or lets you finish the recipe by hand.
 ## How link import works
 
 1. **Fetch.** YouTube gets the title, description and captions. Instagram gets the caption from
-   the public embed page (Open Graph data is the fallback). TikTok uses oEmbed. Websites get
-   schema.org JSON-LD, Open Graph data and the article text.
-2. **Read.** Gemini Nano structures the text into JSON (title, servings, times, category, tags,
-   ingredients with numeric quantities, steps). If that fails, cloud Gemini tries with the text,
-   then by watching the YouTube video.
-3. **Nutrition.** Gemini estimates nutrition per serving from the ingredient list.
-4. The recipe is saved, its thumbnail is cached locally (social CDN links expire), and you can review and edit it.
+   the public embed page (Open Graph data is the fallback), the reel's video file and any public
+   comments, with the creator's own comments first. TikTok uses oEmbed. Websites get schema.org
+   JSON-LD, Open Graph data and the article text.
+2. **Watch (Instagram reels).** The reel is downloaded and sampled frames go through on-device ML Kit
+   text recognition to capture ingredient lists shown on screen. If the clip is under about 18 MB,
+   cloud Gemini also watches and listens to the whole video. You can turn this off in
+   Settings → Gemini AI → Analyse videos.
+3. **Read.** Gemini Nano structures the caption, comments and on-screen text into JSON (title,
+   servings, times, category, tags, ingredients with numeric quantities, steps). If the result
+   isn't a complete recipe, cloud Gemini tries next, watching the video when there is one.
+4. **Nutrition.** Gemini estimates nutrition per serving from the ingredient list.
+5. The recipe is saved, its thumbnail is cached locally (social CDN links expire), and you can review and edit it.
 
-Private posts and pages behind a login can't be read. In that case the app saves a draft with the
+Private posts and pages behind a login can't be read. Instagram shows few or no comments to
+logged-out visitors, so comments are used only when the public page includes them. In that case the app saves a draft with the
 link so you can fill in the rest.

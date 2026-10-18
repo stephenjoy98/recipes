@@ -16,6 +16,7 @@ import com.stephenjoy.recipes.export.RecipeExporter
 import com.stephenjoy.recipes.export.RecipeFileImporter
 import com.stephenjoy.recipes.extract.ContentFetcher
 import com.stephenjoy.recipes.extract.RecipeImporter
+import com.stephenjoy.recipes.extract.VideoAnalyzer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,7 @@ class AppContainer(context: Context) {
     val images = ImageStore(context, http)
     val nano = OnDeviceGemini()
     val cloud = CloudGemini(context)
-    val importer = RecipeImporter(ContentFetcher(http), nano, cloud, settings)
+    val importer = RecipeImporter(ContentFetcher(http), VideoAnalyzer(context, http), nano, cloud, settings)
     val gemini = GeminiRouter(nano, cloud, settings)
     val exporter = RecipeExporter(context, images)
     val fileImporter = RecipeFileImporter(context, recipes, images, importer)

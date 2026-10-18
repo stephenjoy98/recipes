@@ -11,6 +11,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 enum class ImportStep(val label: String) {
     FETCHING("Opening the post"),
+    WATCHING("Watching the video"),
     READING("Reading the recipe with Gemini"),
     NUTRITION("Estimating nutrition"),
     DONE("Done"),
@@ -30,6 +31,7 @@ data class ImportResult(
  */
 class RecipeImporter(
     private val fetcher: ContentFetcher,
+    private val videoAnalyzer: VideoAnalyzer,
     private val nano: OnDeviceGemini,
     private val cloud: CloudGemini,
     private val settings: SettingsRepository,
@@ -38,7 +40,7 @@ class RecipeImporter(
     suspend fun import(url: String, onStep: (ImportStep) -> Unit = {}): ImportResult {
         val warnings = mutableListOf<String>()
         onStep(ImportStep.FETCHING)
-        val source = try {
+        var source = try {
             fetcher.fetch(url)
         } catch (e: CancellationException) {
             throw e
@@ -55,35 +57,57 @@ class RecipeImporter(
         var recipe: Recipe? = source.structuredRecipe?.takeIf { it.ingredients.isNotEmpty() }
         var engine = if (recipe != null) "Recipe card on the page" else ""
 
+        // Instagram reels: download the clip, read its on-screen text on device, and keep the
+        // bytes so cloud Gemini can watch and listen to it.
+        var clip: VideoClip? = null
+        if (recipe == null && source.videoUrl.isNotBlank() && prefs.analyzeVideos && (useNano || useCloud)) {
+            onStep(ImportStep.WATCHING)
+            clip = attempt(warnings, "Video") { videoAnalyzer.analyze(source.videoUrl) }
+            clip?.onScreenText?.takeIf { it.isNotBlank() }?.let { source = source.copy(onScreenText = it) }
+        }
+
         if (recipe == null) {
             onStep(ImportStep.READING)
+            var nanoRecipe: Recipe? = null
             if (useNano && source.hasText) {
-                recipe = attempt(warnings, "Gemini Nano") {
+                nanoRecipe = attempt(warnings, "Gemini Nano") {
                     RecipePrompts.parseRecipe(nano.generate(RecipePrompts.recipePrompt(source, nano.maxInputChars)))
                 }?.takeIf { it.isUsable() }
-                if (recipe != null) engine = "Gemini Nano (on device)"
             }
-            if (recipe == null && useCloud) {
-                // Text-only first when the caption has a recipe; otherwise let Gemini watch the video.
-                val video = if (isYouTube) LinkResolver.youtubeVideoId(source.url)?.let(LinkResolver::youtubeWatchUrl) else null
+            // A complete on-device result is kept (private, no upload). Otherwise cloud Gemini gets
+            // a go, watching the video when we have one.
+            if (nanoRecipe != null && (nanoRecipe.isComplete() || !useCloud)) {
+                recipe = nanoRecipe
+                engine = "Gemini Nano (on device)"
+            } else if (useCloud) {
+                val youtube = if (isYouTube) LinkResolver.youtubeVideoId(source.url)?.let(LinkResolver::youtubeWatchUrl) else null
+                val videoBytes = clip?.bytes
                 val tries = buildList {
-                    if (source.hasText) add(null)
-                    if (video != null) add(video)
+                    if (videoBytes != null) add(CloudTry(video = videoBytes))
+                    if (youtube != null && !source.hasText) add(CloudTry(youtubeUrl = youtube))
+                    if (source.hasText) add(CloudTry())
+                    if (youtube != null && source.hasText) add(CloudTry(youtubeUrl = youtube))
                 }
-                for (videoUrl in tries) {
+                for (t in tries) {
+                    val watching = t.video != null || t.youtubeUrl != null
                     recipe = attempt(warnings, "Gemini cloud") {
                         RecipePrompts.parseRecipe(
                             cloud.generate(
-                                RecipePrompts.fullPrompt(source, cloud.maxInputChars, withVideo = videoUrl != null),
+                                RecipePrompts.fullPrompt(source, cloud.maxInputChars, withVideo = watching),
                                 prefs.cloudModel,
-                                videoUrl,
+                                youtubeUrl = t.youtubeUrl,
+                                video = t.video,
                             ),
                         )
                     }?.takeIf { it.isUsable() }
                     if (recipe != null) {
-                        engine = if (videoUrl != null) "Gemini (watched the video)" else "Gemini (cloud)"
+                        engine = if (watching) "Gemini (watched the video)" else "Gemini (cloud)"
                         break
                     }
+                }
+                if (recipe == null && nanoRecipe != null) {
+                    recipe = nanoRecipe
+                    engine = "Gemini Nano (on device)"
                 }
             }
             if (recipe == null) {
@@ -131,7 +155,13 @@ class RecipeImporter(
         return recipe?.let { it.copy(title = it.title.ifBlank { fallbackTitle }, sourcePlatform = SourcePlatform.MANUAL) }
     }
 
+    private class CloudTry(val video: ByteArray? = null, val youtubeUrl: String? = null)
+
     private fun Recipe.isUsable() = ingredients.size >= 2 || steps.size >= 2
+
+    /** Looks like a full recipe: several ingredients, most with amounts, and real steps. */
+    private fun Recipe.isComplete() =
+        ingredients.size >= 3 && ingredients.count { it.quantity != null } * 2 >= ingredients.size && steps.size >= 2
 
     private fun Recipe.withSource(source: SourceContent) = copy(
         title = title.ifBlank { source.title.ifBlank { "Recipe from ${source.platform.label}" } },

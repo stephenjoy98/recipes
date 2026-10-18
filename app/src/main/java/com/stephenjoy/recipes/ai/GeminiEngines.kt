@@ -83,7 +83,8 @@ class CloudGemini(private val context: Context) {
 
     val maxInputChars = 60_000
 
-    suspend fun generate(prompt: String, modelName: String, youtubeUrl: String? = null): String {
+    /** [video] is sent inline (e.g. an Instagram reel); [youtubeUrl] lets Gemini fetch YouTube itself. */
+    suspend fun generate(prompt: String, modelName: String, youtubeUrl: String? = null, video: ByteArray? = null): String {
         val model = Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
             modelName = modelName,
             generationConfig = generationConfig {
@@ -93,6 +94,7 @@ class CloudGemini(private val context: Context) {
         )
         val request = content {
             if (youtubeUrl != null) fileData(youtubeUrl, "video/mp4")
+            if (video != null) inlineData(video, "video/mp4")
             text(prompt)
         }
         return model.generateContent(request).text.orEmpty()

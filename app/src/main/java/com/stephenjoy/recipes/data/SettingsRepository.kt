@@ -24,6 +24,8 @@ data class AppSettings(
     val cloudModel: String = DEFAULT_CLOUD_MODEL,
     val autoBackup: Boolean = true,
     val dynamicColor: Boolean = true,
+    /** Download reels so Gemini can read on-screen text / watch them (uses mobile data). */
+    val analyzeVideos: Boolean = true,
     val lastBackupAt: Long = 0,
 ) {
     companion object {
@@ -39,6 +41,7 @@ class SettingsRepository(private val context: Context) {
         val autoBackup = booleanPreferencesKey("auto_backup")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
         val lastBackupAt = longPreferencesKey("last_backup_at")
+        val analyzeVideos = booleanPreferencesKey("analyze_videos")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -51,6 +54,7 @@ class SettingsRepository(private val context: Context) {
     }
     suspend fun setAutoBackup(enabled: Boolean) = edit { it[Keys.autoBackup] = enabled }
     suspend fun setDynamicColor(enabled: Boolean) = edit { it[Keys.dynamicColor] = enabled }
+    suspend fun setAnalyzeVideos(enabled: Boolean) = edit { it[Keys.analyzeVideos] = enabled }
     suspend fun setLastBackupAt(time: Long) = edit { it[Keys.lastBackupAt] = time }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
@@ -63,5 +67,6 @@ class SettingsRepository(private val context: Context) {
         autoBackup = this[Keys.autoBackup] ?: true,
         dynamicColor = this[Keys.dynamicColor] ?: true,
         lastBackupAt = this[Keys.lastBackupAt] ?: 0,
+        analyzeVideos = this[Keys.analyzeVideos] ?: true,
     )
 }

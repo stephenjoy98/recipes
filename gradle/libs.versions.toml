@@ -25,6 +25,7 @@ jsoup = "1.21.2"
 coil = "3.3.0"
 junit = "4.13.2"
 pdfbox = "2.0.27.0"
+mlkitTextRecognition = "16.0.1"
 desugarJdkLibs = "2.1.5"
 splashscreen = "1.0.1"
 
@@ -52,6 +53,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 mlkit-genai-prompt = { group = "com.google.mlkit", name = "genai-prompt", version.ref = "mlkitGenaiPrompt" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }

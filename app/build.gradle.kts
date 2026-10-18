@@ -109,6 +109,8 @@ dependencies {
 
     // On-device Gemini Nano through ML Kit GenAI Prompt API (Android AICore)
     implementation(libs.mlkit.genai.prompt)
+    // On-device text recognition for ingredient lists shown in videos
+    implementation(libs.mlkit.text.recognition)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
