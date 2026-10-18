@@ -50,7 +50,7 @@ object RecipeParsers {
         }
     }
 
-    private fun decode(bytes: ByteArray): String = String(bytes, Charsets.UTF_8).removePrefix("﻿")
+    private fun decode(bytes: ByteArray): String = String(bytes, Charsets.UTF_8).removePrefix("\uFEFF")
 
     private fun isZip(bytes: ByteArray) = bytes.size > 4 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte() &&
         bytes[2].toInt() == 3 && bytes[3].toInt() == 4

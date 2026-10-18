@@ -33,6 +33,10 @@ jobs:
       - name: Lint (includes NewApi backward-compatibility check)
         run: ./gradlew --no-daemon lintDebug
 
+      - name: Print lint report
+        if: failure()
+        run: cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt || true
+
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 

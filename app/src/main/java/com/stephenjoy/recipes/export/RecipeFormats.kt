@@ -95,7 +95,7 @@ object RecipeFormats {
 
     /** RFC 4180 CSV with a UTF-8 BOM so Excel shows accents and fractions correctly. */
     fun toCsv(recipes: List<Recipe>): String = buildString {
-        append('﻿')
+        append('\uFEFF')
         appendCsvRow(csvHeader)
         recipes.forEach { r ->
             val n = r.nutrition

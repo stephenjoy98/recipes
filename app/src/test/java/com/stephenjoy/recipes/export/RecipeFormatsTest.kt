@@ -64,7 +64,7 @@ class RecipeFormatsTest {
     @Test
     fun `csv quotes cells with commas quotes and newlines`() {
         val csv = RecipeFormats.toCsv(listOf(pancakes))
-        assertTrue(csv.startsWith("﻿Title,Description,"))
+        assertTrue(csv.startsWith("\uFEFFTitle,Description,"))
         assertTrue(csv.contains("\"Quick, \"\"diner\"\" style.\""))
         assertTrue(csv.contains("\"1½ cup flour, sifted\n3 eggs\n"))
         assertEquals(2, csv.split("\r\n").filter { it.isNotEmpty() }.size.coerceAtMost(2))

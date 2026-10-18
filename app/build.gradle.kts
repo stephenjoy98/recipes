@@ -48,9 +48,6 @@ android {
         error += "NewApi"
         abortOnError = true
         checkReleaseBuilds = false
-        // Print every issue to the build log (CI) as well as the HTML report.
-        textReport = true
-        textOutput = file("stdout")
         disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable", "OldTargetApi")
     }
 
