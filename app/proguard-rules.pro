@@ -15,6 +15,9 @@
 -if class androidx.credentials.CredentialManager
 -keep class androidx.credentials.playservices.** { *; }
 
+# PdfBox-Android optional JPEG2000 codec
+-dontwarn com.gemalto.jp2.**
+
 # Jsoup optional deps
 -dontwarn org.jspecify.annotations.**
 -dontwarn com.google.re2j.**

@@ -61,6 +61,10 @@ class RecipeRepository(private val dao: RecipeDao) {
         return id
     }
 
+    /** Recipes whose uid already exists locally are updated in place; the rest are added. */
+    suspend fun existingIdFor(recipe: Recipe): Long? =
+        recipe.uid.takeIf { it.isNotBlank() }?.let { dao.getByUid(it)?.id }
+
     suspend fun delete(id: Long) {
         dao.deleteWithTombstone(id, System.currentTimeMillis())
         _changes.tryEmit(Unit)

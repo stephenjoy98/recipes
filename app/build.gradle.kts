@@ -48,6 +48,9 @@ android {
         error += "NewApi"
         abortOnError = true
         checkReleaseBuilds = false
+        // Print every issue to the build log (CI) as well as the HTML report.
+        textReport = true
+        textOutput = file("stdout")
         disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable", "OldTargetApi")
     }
 
@@ -115,6 +118,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
     implementation(libs.jsoup)
+    // Text extraction for importing recipes from PDF files
+    implementation(libs.pdfbox.android)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 

@@ -35,6 +35,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- Open with / share recipe files: JSON, CSV, PDF, Cooklang, zip -->
+            <intent-filter android:label="@string/import_label">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/ld+json" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="text/x-cooklang" />
+            </intent-filter>
         </activity>
 
         <!-- Backported Android photo picker for Android 4.4 to 10 via Google Play services -->

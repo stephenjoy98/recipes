@@ -112,6 +112,25 @@ class RecipeImporter(
         return ImportResult(result, engine, shown.distinct())
     }
 
+    /**
+     * Structures free text (e.g. a PDF or note from another app) with Gemini. Returns null when
+     * no model is available or nothing recipe-like was found.
+     */
+    suspend fun fromText(text: String, fallbackTitle: String): Recipe? {
+        val source = SourceContent(url = "", platform = SourcePlatform.MANUAL, title = fallbackTitle, text = text)
+        val prefs = settings.current()
+        val useNano = prefs.aiEngine != AiEngine.CLOUD && nano.isAvailable()
+        val useCloud = prefs.aiEngine != AiEngine.ON_DEVICE && cloud.isConfigured()
+        val ignored = mutableListOf<String>()
+        var recipe = if (useNano) attempt(ignored, "Gemini Nano") {
+            RecipePrompts.parseRecipe(nano.generate(RecipePrompts.recipePrompt(source, nano.maxInputChars)))
+        }?.takeIf { it.isUsable() } else null
+        if (recipe == null && useCloud) recipe = attempt(ignored, "Gemini cloud") {
+            RecipePrompts.parseRecipe(cloud.generate(RecipePrompts.fullPrompt(source, cloud.maxInputChars, withVideo = false), prefs.cloudModel))
+        }?.takeIf { it.isUsable() }
+        return recipe?.let { it.copy(title = it.title.ifBlank { fallbackTitle }, sourcePlatform = SourcePlatform.MANUAL) }
+    }
+
     private fun Recipe.isUsable() = ingredients.size >= 2 || steps.size >= 2
 
     private fun Recipe.withSource(source: SourceContent) = copy(

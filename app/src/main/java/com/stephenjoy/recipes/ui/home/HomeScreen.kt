@@ -2,7 +2,10 @@ package com.stephenjoy.recipes.ui.home
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,12 +37,14 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -92,6 +97,7 @@ import com.stephenjoy.recipes.ui.components.RecipeImage
 import com.stephenjoy.recipes.ui.components.icon
 import com.stephenjoy.recipes.ui.export.ExportChoice
 import com.stephenjoy.recipes.ui.export.ExportSheet
+import com.stephenjoy.recipes.ui.export.ImportFileSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +106,8 @@ fun HomeScreen(
     onNewRecipe: () -> Unit,
     onImportLink: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    incomingFile: Uri? = null,
+    onIncomingFileConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val vm: HomeViewModel = viewModel { HomeViewModel(context.container.recipes) }
@@ -108,6 +116,14 @@ fun HomeScreen(
     var showLinkDialog by rememberSaveable { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     var showExport by rememberSaveable { mutableStateOf(false) }
+    var importUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) importUri = uri }
+    LaunchedEffect(incomingFile) {
+        if (incomingFile != null) {
+            importUri = incomingFile
+            onIncomingFileConsumed()
+        }
+    }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     BackHandler(enabled = fabMenuExpanded) { fabMenuExpanded = false }
 
@@ -158,6 +174,7 @@ fun HomeScreen(
                 onExpandedChange = { fabMenuExpanded = it },
                 onLink = { fabMenuExpanded = false; showLinkDialog = true },
                 onManual = { fabMenuExpanded = false; onNewRecipe() },
+                onFile = { fabMenuExpanded = false; pickFile.launch(arrayOf("*/*")) },
             )
         },
     ) { padding ->
@@ -176,8 +193,12 @@ fun HomeScreen(
             }
             if (!state.loading && state.recipes.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    if (state.totalCount == 0) EmptyLibrary(onPaste = { showLinkDialog = true })
-                    else NoMatches(onClear = vm::clearFilters)
+                    if (state.totalCount == 0) {
+                        EmptyLibrary(onPaste = { showLinkDialog = true }, onImportFile = { pickFile.launch(arrayOf("*/*")) })
+                    }
+                    else {
+                        NoMatches(onClear = vm::clearFilters)
+                    }
                 }
             }
             items(state.recipes, key = { it.id }) { recipe ->
@@ -196,6 +217,8 @@ fun HomeScreen(
         ExportSheet(choices = choices, onDismiss = { showExport = false })
     }
 
+    importUri?.let { uri -> ImportFileSheet(uri = uri, onDismiss = { importUri = null }) }
+
     if (showLinkDialog) {
         LinkDialog(
             onDismiss = { showLinkDialog = false },
@@ -211,6 +234,7 @@ private fun AddRecipeFabMenu(
     onExpandedChange: (Boolean) -> Unit,
     onLink: () -> Unit,
     onManual: () -> Unit,
+    onFile: () -> Unit,
 ) {
     FloatingActionButtonMenu(
         expanded = expanded,
@@ -233,6 +257,11 @@ private fun AddRecipeFabMenu(
             onClick = onLink,
             icon = { Icon(Icons.Outlined.Link, contentDescription = null) },
             text = { Text("From a link") },
+        )
+        FloatingActionButtonMenuItem(
+            onClick = onFile,
+            icon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
+            text = { Text("Import a file") },
         )
         FloatingActionButtonMenuItem(
             onClick = onManual,
@@ -350,7 +379,7 @@ private fun RecipeCard(recipe: Recipe, onClick: () -> Unit, onFavorite: () -> Un
 }
 
 @Composable
-private fun EmptyLibrary(onPaste: () -> Unit) {
+private fun EmptyLibrary(onPaste: () -> Unit, onImportFile: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(vertical = 48.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -365,7 +394,10 @@ private fun EmptyLibrary(onPaste: () -> Unit) {
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        TextButton(onClick = onPaste) { Text("Paste a link") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onPaste, shapes = ButtonDefaults.shapes()) { Text("Paste a link") }
+            TextButton(onClick = onImportFile, shapes = ButtonDefaults.shapes()) { Text("Import a file") }
+        }
     }
 }
 

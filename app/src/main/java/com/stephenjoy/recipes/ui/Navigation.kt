@@ -1,5 +1,6 @@
 package com.stephenjoy.recipes.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
@@ -25,8 +26,15 @@ import kotlinx.serialization.Serializable
 fun RecipesNavHost(
     sharedLink: String?,
     onSharedLinkConsumed: () -> Unit,
+    sharedFile: Uri? = null,
+    onSharedFileConsumed: () -> Unit = {},
     nav: NavHostController = rememberNavController(),
 ) {
+    // Files opened with / shared to the app are imported from the home screen.
+    LaunchedEffect(sharedFile) {
+        if (sharedFile != null) nav.popBackStack(HomeRoute, inclusive = false)
+    }
+
     LaunchedEffect(sharedLink) {
         if (sharedLink != null) {
             nav.navigate(ImportRoute(sharedLink)) { launchSingleTop = true }
@@ -41,6 +49,8 @@ fun RecipesNavHost(
                 onNewRecipe = { nav.navigate(EditorRoute()) },
                 onImportLink = { nav.navigate(ImportRoute(it)) },
                 onOpenSettings = { nav.navigate(SettingsRoute) },
+                incomingFile = sharedFile,
+                onIncomingFileConsumed = onSharedFileConsumed,
             )
         }
         composable<DetailRoute> { entry ->

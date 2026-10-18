@@ -22,20 +22,23 @@ object JsonLdRecipeParser {
     fun parse(jsonLdBlocks: List<String>): Recipe? {
         for (block in jsonLdBlocks) {
             val root = runCatching { json.parseToJsonElement(block) }.getOrNull() ?: continue
-            val node = findRecipe(root) ?: continue
+            val node = findRecipes(root).firstOrNull() ?: continue
             return toRecipe(node)
         }
         return null
     }
 
-    private fun findRecipe(element: JsonElement): JsonObject? = when (element) {
-        is JsonArray -> element.firstNotNullOfOrNull { findRecipe(it) }
+    /** Every schema.org Recipe in a JSON document (arrays, @graph, ItemList, mainEntity). */
+    fun parseAll(root: JsonElement): List<Recipe> = findRecipes(root).map(::toRecipe)
+
+    private fun findRecipes(element: JsonElement): List<JsonObject> = when (element) {
+        is JsonArray -> element.flatMap { findRecipes(it) }
         is JsonObject -> when {
-            isRecipe(element) -> element
-            else -> element["@graph"]?.let { findRecipe(it) }
-                ?: element["mainEntity"]?.let { findRecipe(it) }
+            isRecipe(element) -> listOf(element)
+            else -> listOfNotNull(element["@graph"], element["mainEntity"], element["itemListElement"], element["item"], element["recipes"])
+                .flatMap { findRecipes(it) }
         }
-        else -> null
+        else -> emptyList()
     }
 
     private fun isRecipe(obj: JsonObject): Boolean = when (val type = obj["@type"]) {
@@ -57,6 +60,7 @@ object JsonLdRecipeParser {
             description = text(o["description"]).let(::cleanHtml),
             author = authorName(o["author"]),
             imageUrl = imageUrl(o["image"]),
+            sourceUrl = text(o["url"]).takeIf { it.startsWith("http") }.orEmpty(),
             servings = servings(o["recipeYield"]),
             prepTimeMinutes = isoMinutes(text(o["prepTime"])),
             cookTimeMinutes = isoMinutes(text(o["cookTime"])).let { cook ->

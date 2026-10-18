@@ -34,6 +34,12 @@ button groups, wavy progress indicators, emphasized typography and expressive sh
   Cookbook and others can import), **CSV** (spreadsheets), **PDF** (printable, with photos),
   **TXT**, or **Cooklang `.cook`** (several recipes are zipped). Save the file with the system
   file picker or send it through the share sheet. A scaled recipe can be exported with its scaled amounts.
+- **Import from files.** Use **+ → Import a file**, or open/share a file to the app, to bring in
+  JSON (this app's exports and schema.org files from Mealie, Tandoor, Paprika-style exports and
+  others), CSV (headers such as Title/Name, Ingredients, Steps/Directions are recognised), PDF,
+  TXT, Cooklang `.cook`, or a `.zip` of any of these. You see a preview first and pick what to
+  import. Recipes exported from this app update their existing copy instead of being duplicated.
+  PDFs and text without a recognisable layout are read by Gemini.
 - **Works on older Android.** The app supports Android 7.0 and later (the minimum for current Jetpack Compose and Material 3). Material You colors are
   used on Android 12+, with a matching built-in palette on older versions, and the splash screen
   and photo picker look the same everywhere. Gemini Nano is used only on devices that have it.
