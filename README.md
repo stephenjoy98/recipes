@@ -29,6 +29,15 @@ button groups, wavy progress indicators, emphasized typography and expressive sh
 - **Prep & cook time** with quick presets, shown on cards and in the detail view.
 - **Nutrition** per serving or for the whole (scaled) batch. You can edit it or re-estimate it with Gemini.
 - **Cooking mode helpers:** tick off ingredients and steps as you go, and share a recipe as text.
+- **Export anywhere.** Export one recipe (from its ⋮ menu) or your whole library (the export
+  icon on the home screen) as **JSON** (schema.org Recipe, which Mealie, Tandoor, Nextcloud
+  Cookbook and others can import), **CSV** (spreadsheets), **PDF** (printable, with photos),
+  **TXT**, or **Cooklang `.cook`** (several recipes are zipped). Save the file with the system
+  file picker or send it through the share sheet. A scaled recipe can be exported with its scaled amounts.
+- **Works on older Android.** The app supports Android 6.0 and later. Material You colors are
+  used on Android 12+, with a matching built-in palette on older versions, and the splash screen
+  and photo picker look the same everywhere. Gemini Nano is used only on devices that have it.
+  Android Lint's `NewApi` check in CI fails the build on any API call that's too new for Android 6.
 - **Google sign-in backup.** Sign in with Google and your library syncs two-way with Firestore.
   It backs up automatically after changes and twice a day, and deletions are synced too.
 

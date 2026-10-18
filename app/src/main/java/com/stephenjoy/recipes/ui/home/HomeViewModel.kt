@@ -30,6 +30,7 @@ data class HomeFilters(
 data class HomeUiState(
     val loading: Boolean = true,
     val recipes: List<Recipe> = emptyList(),
+    val all: List<Recipe> = emptyList(),
     val totalCount: Int = 0,
     val categories: List<String> = listOf(ALL, FAVORITES),
     val tags: List<String> = emptyList(),
@@ -50,6 +51,7 @@ class HomeViewModel(private val repo: RecipeRepository) : ViewModel() {
         HomeUiState(
             loading = false,
             recipes = all.filter { it.matches(f) }.sortedWith(f.sort.comparator()),
+            all = all.sortedWith(f.sort.comparator()),
             totalCount = all.size,
             categories = listOf(ALL, FAVORITES) + categories,
             tags = tags,

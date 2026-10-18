@@ -8,8 +8,7 @@ import com.stephenjoy.recipes.domain.Nutrition
 import com.stephenjoy.recipes.domain.Quantities
 import com.stephenjoy.recipes.domain.Recipe
 import com.stephenjoy.recipes.domain.Scaling
-import com.stephenjoy.recipes.domain.displayAmount
-import com.stephenjoy.recipes.domain.formatDuration
+import com.stephenjoy.recipes.export.RecipeFormats
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -128,25 +127,7 @@ class RecipeDetailViewModel(private val id: Long, private val c: AppContainer) :
     fun shareText(): String {
         val s = state.value
         val r = s.recipe ?: return ""
-        return buildString {
-            appendLine(r.title)
-            if (r.description.isNotBlank()) appendLine(r.description)
-            appendLine()
-            appendLine("Serves ${s.servingsLabel} · Prep ${formatDuration(r.prepTimeMinutes)} · Cook ${formatDuration(r.cookTimeMinutes)}")
-            appendLine()
-            appendLine("Ingredients")
-            s.scaledIngredients.forEach { ing ->
-                appendLine("• " + listOf(ing.displayAmount(), ing.name, ing.note.takeIf { it.isNotBlank() }?.let { "($it)" })
-                    .filter { !it.isNullOrBlank() }.joinToString(" "))
-            }
-            appendLine()
-            appendLine("Steps")
-            r.steps.forEachIndexed { i, step -> appendLine("${i + 1}. $step") }
-            if (r.sourceUrl.isNotBlank()) {
-                appendLine()
-                appendLine("Source: ${r.sourceUrl}")
-            }
-        }
+        return RecipeFormats.textOf(r, s.scaledIngredients, s.servingsLabel)
     }
 
     private fun Set<Int>.toggle(i: Int) = if (i in this) this - i else this + i

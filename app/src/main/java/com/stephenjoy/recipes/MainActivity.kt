@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenjoy.recipes.data.AppSettings
@@ -20,6 +21,8 @@ class MainActivity : ComponentActivity() {
     private val sharedLink = MutableStateFlow<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Same splash screen on every Android version (the system one only exists on 12+).
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (savedInstanceState == null) handleIntent(intent)

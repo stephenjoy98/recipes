@@ -24,6 +24,8 @@ okhttp = "4.12.0"
 jsoup = "1.21.2"
 coil = "3.3.0"
 junit = "4.13.2"
+desugarJdkLibs = "2.1.5"
+splashscreen = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +60,8 @@ jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

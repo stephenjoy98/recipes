@@ -12,6 +12,7 @@ import com.stephenjoy.recipes.data.ImageStore
 import com.stephenjoy.recipes.data.RecipeRepository
 import com.stephenjoy.recipes.data.SettingsRepository
 import com.stephenjoy.recipes.data.local.AppDatabase
+import com.stephenjoy.recipes.export.RecipeExporter
 import com.stephenjoy.recipes.extract.ContentFetcher
 import com.stephenjoy.recipes.extract.RecipeImporter
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ class AppContainer(context: Context) {
     val cloud = CloudGemini(context)
     val importer = RecipeImporter(ContentFetcher(http), nano, cloud, settings)
     val gemini = GeminiRouter(nano, cloud, settings)
+    val exporter = RecipeExporter(context, images)
     val auth = AuthManager(context)
     val backup = BackupRepository(auth, database.recipeDao(), settings)
 }

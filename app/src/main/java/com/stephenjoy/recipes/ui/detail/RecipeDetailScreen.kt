@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Share
@@ -98,6 +99,8 @@ import com.stephenjoy.recipes.ui.components.SectionTitle
 import com.stephenjoy.recipes.ui.components.ShapeBadge
 import com.stephenjoy.recipes.ui.components.StatBlock
 import com.stephenjoy.recipes.ui.components.icon
+import com.stephenjoy.recipes.ui.export.ExportChoice
+import com.stephenjoy.recipes.ui.export.ExportSheet
 import kotlin.math.roundToInt
 
 @Composable
@@ -116,6 +119,7 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
 
     var scalingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var showExport by rememberSaveable { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
@@ -240,6 +244,11 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
                             )
                         }
                         DropdownMenuItem(
+                            text = { Text("Export…") },
+                            leadingIcon = { Icon(Icons.Outlined.SaveAlt, contentDescription = null) },
+                            onClick = { menu = false; showExport = true },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Delete") },
                             leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
                             onClick = { menu = false; confirmDelete = true },
@@ -263,6 +272,20 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
         } else {
             scalingIndex = null
         }
+    }
+
+    if (showExport) {
+        val choices = buildList {
+            add(ExportChoice("As saved (${recipe.servings} servings)", listOf(recipe)))
+            if (state.isScaled) {
+                val scaled = recipe.copy(
+                    ingredients = state.scaledIngredients,
+                    servings = state.servings.roundToInt().coerceAtLeast(1),
+                )
+                add(ExportChoice("Scaled ${Scaling.formatFactor(state.factor)}", listOf(scaled)))
+            }
+        }
+        ExportSheet(choices = choices, onDismiss = { showExport = false })
     }
 
     if (confirmDelete) {

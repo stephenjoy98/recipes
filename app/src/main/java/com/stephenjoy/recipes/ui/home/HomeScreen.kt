@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Timer
@@ -89,6 +90,8 @@ import com.stephenjoy.recipes.extract.LinkResolver
 import com.stephenjoy.recipes.ui.components.InfoPill
 import com.stephenjoy.recipes.ui.components.RecipeImage
 import com.stephenjoy.recipes.ui.components.icon
+import com.stephenjoy.recipes.ui.export.ExportChoice
+import com.stephenjoy.recipes.ui.export.ExportSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +107,7 @@ fun HomeScreen(
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showLinkDialog by rememberSaveable { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
+    var showExport by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     BackHandler(enabled = fabMenuExpanded) { fabMenuExpanded = false }
 
@@ -135,6 +139,11 @@ fun HomeScreen(
                                     onClick = { vm.setSort(order); showSort = false },
                                 )
                             }
+                        }
+                    }
+                    if (state.totalCount > 0) {
+                        IconButton(onClick = { showExport = true }) {
+                            Icon(Icons.Outlined.SaveAlt, contentDescription = "Export recipes")
                         }
                     }
                     IconButton(onClick = onOpenSettings) {
@@ -175,6 +184,16 @@ fun HomeScreen(
                 RecipeCard(recipe, onClick = { onOpenRecipe(recipe.id) }, onFavorite = { vm.toggleFavorite(recipe) })
             }
         }
+    }
+
+    if (showExport && state.all.isNotEmpty()) {
+        val choices = buildList {
+            add(ExportChoice("All ${state.all.size} recipes", state.all))
+            if (state.recipes.isNotEmpty() && state.recipes.size != state.all.size) {
+                add(ExportChoice("${state.recipes.size} shown", state.recipes))
+            }
+        }
+        ExportSheet(choices = choices, onDismiss = { showExport = false })
     }
 
     if (showLinkDialog) {

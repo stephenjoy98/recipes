@@ -1,6 +1,7 @@
 package com.stephenjoy.recipes.ai
 
 import android.content.Context
+import android.os.Build
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.ai.ai
@@ -13,6 +14,7 @@ import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /** State of the on-device Gemini Nano model managed by Android AICore. */
@@ -36,7 +38,10 @@ class OnDeviceGemini {
     /** Input budget: Nano accepts roughly 4k tokens, so keep prompts compact. */
     val maxInputChars = 9_000
 
-    suspend fun status(): NanoStatus = runCatching {
+    /** AICore (and so Gemini Nano) only exists on newer Android; never touch ML Kit GenAI below this. */
+    private val supportedSdk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
+    suspend fun status(): NanoStatus = if (!supportedSdk) NanoStatus.Unavailable else runCatching {
         when (model.checkStatus()) {
             FeatureStatus.AVAILABLE -> NanoStatus.Available
             FeatureStatus.DOWNLOADABLE -> NanoStatus.Downloadable
@@ -47,7 +52,7 @@ class OnDeviceGemini {
 
     suspend fun isAvailable(): Boolean = status() == NanoStatus.Available
 
-    fun download(): Flow<NanoStatus> = model.download().map { status ->
+    fun download(): Flow<NanoStatus> = if (!supportedSdk) flowOf(NanoStatus.Unavailable) else model.download().map { status ->
         when (status) {
             is DownloadStatus.DownloadStarted -> NanoStatus.Downloading()
             is DownloadStatus.DownloadProgress -> NanoStatus.Downloading(status.totalBytesDownloaded)
@@ -57,6 +62,7 @@ class OnDeviceGemini {
     }
 
     suspend fun generate(prompt: String): String {
+        check(supportedSdk) { "Gemini Nano isn't available on this Android version" }
         val response = model.generateContent(
             generateContentRequest(TextPart(prompt)) {
                 temperature = 0.2f

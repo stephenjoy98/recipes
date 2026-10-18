@@ -18,7 +18,8 @@ android {
 
     defaultConfig {
         applicationId = "com.stephenjoy.recipes"
-        minSdk = 26
+        // Android 6.0+. Gemini Nano is only used where AICore exists (checked at runtime).
+        minSdk = 23
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
@@ -37,6 +38,16 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Lets newer java.* APIs used by dependencies run on old Android versions.
+        isCoreLibraryDesugaringEnabled = true
+    }
+
+    lint {
+        // Fail the build on any API call that doesn't exist on minSdk (backward compatibility).
+        error += "NewApi"
+        abortOnError = true
+        checkReleaseBuilds = false
+        disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable", "OldTargetApi")
     }
 
     buildFeatures {
@@ -65,6 +76,8 @@ ksp {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
