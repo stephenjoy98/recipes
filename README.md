@@ -34,10 +34,10 @@ button groups, wavy progress indicators, emphasized typography and expressive sh
   Cookbook and others can import), **CSV** (spreadsheets), **PDF** (printable, with photos),
   **TXT**, or **Cooklang `.cook`** (several recipes are zipped). Save the file with the system
   file picker or send it through the share sheet. A scaled recipe can be exported with its scaled amounts.
-- **Works on older Android.** The app supports Android 6.0 and later. Material You colors are
+- **Works on older Android.** The app supports Android 7.0 and later (the minimum for current Jetpack Compose and Material 3). Material You colors are
   used on Android 12+, with a matching built-in palette on older versions, and the splash screen
   and photo picker look the same everywhere. Gemini Nano is used only on devices that have it.
-  Android Lint's `NewApi` check in CI fails the build on any API call that's too new for Android 6.
+  Android Lint's `NewApi` check in CI fails the build on any API call that's too new for Android 7.
 - **Google sign-in backup.** Sign in with Google and your library syncs two-way with Firestore.
   It backs up automatically after changes and twice a day, and deletions are synced too.
 

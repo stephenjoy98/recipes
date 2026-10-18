@@ -18,8 +18,9 @@ android {
 
     defaultConfig {
         applicationId = "com.stephenjoy.recipes"
-        // Android 6.0+. Gemini Nano is only used where AICore exists (checked at runtime).
-        minSdk = 23
+        // Android 7.0+, the lowest version Compose/Material 3 support. Gemini Nano is only used
+        // where AICore exists (checked at runtime).
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
