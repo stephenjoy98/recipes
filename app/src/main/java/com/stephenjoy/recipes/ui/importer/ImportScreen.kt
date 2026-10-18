@@ -1,5 +1,6 @@
 package com.stephenjoy.recipes.ui.importer
 
+import androidx.compose.runtime.getValue
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,12 +22,14 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -34,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -150,11 +152,15 @@ fun ImportScreen(
                         Text("Already in your recipe box", style = MaterialTheme.typography.titleMedium)
                         Text("“${existing.title}” was saved from this link before.")
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onOpenRecipe(existing.id) }) { Text("Open it") }
-                            OutlinedButton(onClick = vm::start) { Text("Import again") }
+                            Button(onClick = { onOpenRecipe(existing.id) }, shapes = ButtonDefaults.shapes()) { Text("Open it") }
+                            OutlinedButton(onClick = vm::start, shapes = ButtonDefaults.shapes()) { Text("Import again") }
                         }
                     }
                 }
+            }
+
+            AnimatedVisibility(state.running, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                ContainedLoadingIndicator(Modifier.padding(vertical = 16.dp).size(96.dp))
             }
 
             if (state.existing == null) {
@@ -162,7 +168,7 @@ fun ImportScreen(
                     listOf(ImportStep.FETCHING, ImportStep.READING, ImportStep.NUTRITION).forEach { step ->
                         StepRow(step, current = state.step, failed = state.error != null)
                     }
-                    AnimatedVisibility(state.running) { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                    AnimatedVisibility(state.running) { LinearWavyProgressIndicator(Modifier.fillMaxWidth()) }
                 }
             }
 
@@ -171,7 +177,7 @@ fun ImportScreen(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Import failed", style = MaterialTheme.typography.titleMedium)
                         Text(error)
-                        Button(onClick = vm::start) { Text("Try again") }
+                        Button(onClick = vm::start, shapes = ButtonDefaults.shapes()) { Text("Try again") }
                     }
                 }
             }
@@ -183,7 +189,7 @@ fun ImportScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.size(8.dp))
-                            Text("Saved “${state.savedTitle}”", style = MaterialTheme.typography.titleMedium)
+                            Text("Saved “${state.savedTitle}”", style = MaterialTheme.typography.titleMediumEmphasized)
                         }
                         if (state.engine.isNotBlank()) Text("Extracted by ${state.engine}", style = MaterialTheme.typography.bodySmall)
                         state.warnings.forEach { warning ->
@@ -195,8 +201,8 @@ fun ImportScreen(
                         }
                         Spacer(Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onEditRecipe(savedId) }) { Text("Review & edit") }
-                            FilledTonalButton(onClick = { onOpenRecipe(savedId) }) { Text("Open") }
+                            Button(onClick = { onEditRecipe(savedId) }, shapes = ButtonDefaults.shapes()) { Text("Review & edit") }
+                            FilledTonalButton(onClick = { onOpenRecipe(savedId) }, shapes = ButtonDefaults.shapes()) { Text("Open") }
                         }
                     }
                 }
@@ -212,13 +218,13 @@ private fun StepRow(step: ImportStep, current: ImportStep, failed: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         when {
             done -> Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            active -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
+            active -> LoadingIndicator(Modifier.size(28.dp))
             else -> Icon(Icons.Outlined.Circle, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
         }
         Spacer(Modifier.size(12.dp))
         Text(
             step.label,
-            style = MaterialTheme.typography.bodyLarge,
+            style = if (active) MaterialTheme.typography.bodyLargeEmphasized else MaterialTheme.typography.bodyLarge,
             color = if (done || active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

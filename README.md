@@ -4,8 +4,10 @@ An Android app that turns cooking posts into recipes you can actually cook from.
 Instagram post or reel, a YouTube video or Short, a TikTok, or any recipe website to the app and
 Gemini pulls out the ingredients, steps, prep/cook time, tags, category and estimated nutrition.
 
-Built with Kotlin, Jetpack Compose and **Material 3 / Material You** (dynamic color from your
-wallpaper on Android 12+).
+Built with Kotlin, Jetpack Compose and **Material Design 3 Expressive**, the newest version of
+Google's Material 3. That means Material You dynamic color from your wallpaper on Android 12+,
+expressive spring motion, shape-morphing buttons and loading indicators, the FAB menu, connected
+button groups, wavy progress indicators, emphasized typography and expressive shapes.
 
 ## Features
 

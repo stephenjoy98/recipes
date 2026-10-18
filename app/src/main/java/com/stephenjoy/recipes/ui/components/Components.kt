@@ -21,7 +21,9 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.toShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.stephenjoy.recipes.container
@@ -50,12 +51,20 @@ fun RecipeImage(recipe: Recipe, modifier: Modifier = Modifier, version: Long = r
             Modifier.fillMaxSize().background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Outlined.RestaurantMenu,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
-                modifier = Modifier.size(40.dp),
-            )
+            Surface(
+                shape = MaterialShapes.Cookie9Sided.toShape(),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                modifier = Modifier.size(72.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Outlined.RestaurantMenu,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+            }
         }
     }
     if (model == null) {
@@ -82,13 +91,31 @@ fun SourcePlatform.icon(): ImageVector = when (this) {
     SourcePlatform.MANUAL -> Icons.Outlined.EditNote
 }
 
+/** Number badge in an expressive Material shape (e.g. step numbers). */
+@Composable
+fun ShapeBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+    done: Boolean = false,
+) {
+    Surface(
+        shape = if (done) CircleShape else MaterialShapes.Cookie9Sided.toShape(),
+        color = if (done) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer,
+        contentColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = modifier.size(36.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text, style = MaterialTheme.typography.labelLargeEmphasized)
+        }
+    }
+}
+
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
     Row(modifier.padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLargeEmphasized,
             modifier = Modifier.weight(1f),
         )
         trailing()
@@ -125,7 +152,7 @@ fun StatBlock(icon: ImageVector, value: String, label: String, modifier: Modifie
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+            Text(value, style = MaterialTheme.typography.titleMediumEmphasized,
                 color = MaterialTheme.colorScheme.onSecondaryContainer)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
         }

@@ -52,6 +52,12 @@ android {
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions {
+        optIn.addAll(
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
+        )
+    }
 }
 
 ksp {

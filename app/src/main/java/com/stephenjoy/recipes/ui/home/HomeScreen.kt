@@ -1,5 +1,8 @@
 package com.stephenjoy.recipes.ui.home
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +14,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -41,14 +43,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -57,22 +58,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -99,16 +101,26 @@ fun HomeScreen(
     val context = LocalContext.current
     val vm: HomeViewModel = viewModel { HomeViewModel(context.container.recipes) }
     val state by vm.state.collectAsStateWithLifecycle()
-    var showAddSheet by rememberSaveable { mutableStateOf(false) }
+    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showLinkDialog by rememberSaveable { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    BackHandler(enabled = fabMenuExpanded) { fabMenuExpanded = false }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Recipe Box", fontWeight = FontWeight.SemiBold) },
+            LargeFlexibleTopAppBar(
+                title = { Text("Recipe Box", style = MaterialTheme.typography.displaySmallEmphasized) },
+                subtitle = {
+                    Text(
+                        when (state.totalCount) {
+                            0 -> "Share a post to get started"
+                            1 -> "1 recipe"
+                            else -> "${state.totalCount} recipes"
+                        },
+                    )
+                },
                 scrollBehavior = scrollBehavior,
                 actions = {
                     Box {
@@ -132,10 +144,11 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddSheet = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("Add recipe") },
+            AddRecipeFabMenu(
+                expanded = fabMenuExpanded,
+                onExpandedChange = { fabMenuExpanded = it },
+                onLink = { fabMenuExpanded = false; showLinkDialog = true },
+                onManual = { fabMenuExpanded = false; onNewRecipe() },
             )
         },
     ) { padding ->
@@ -164,41 +177,48 @@ fun HomeScreen(
         }
     }
 
-    if (showAddSheet) {
-        val sheetState = rememberModalBottomSheetState()
-        ModalBottomSheet(onDismissRequest = { showAddSheet = false }, sheetState = sheetState) {
-            Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-                Text(
-                    "Add a recipe",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                )
-                ListItem(
-                    headlineContent = { Text("From a link") },
-                    supportingContent = { Text("Instagram, YouTube, Shorts, TikTok or any recipe site") },
-                    leadingContent = { Icon(Icons.Outlined.Link, contentDescription = null) },
-                    modifier = Modifier.clickable { showAddSheet = false; showLinkDialog = true },
-                )
-                ListItem(
-                    headlineContent = { Text("Write it myself") },
-                    supportingContent = { Text("Start from a blank recipe") },
-                    leadingContent = { Icon(Icons.Outlined.EditNote, contentDescription = null) },
-                    modifier = Modifier.clickable { showAddSheet = false; onNewRecipe() },
-                )
-                Text(
-                    "Tip: in any app, tap Share on a post and choose “Save recipe”.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                )
-            }
-        }
-    }
-
     if (showLinkDialog) {
         LinkDialog(
             onDismiss = { showLinkDialog = false },
             onImport = { showLinkDialog = false; onImportLink(it) },
+        )
+    }
+}
+
+/** Material 3 Expressive FAB menu: the "+" morphs into a close button and reveals the add options. */
+@Composable
+private fun AddRecipeFabMenu(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onLink: () -> Unit,
+    onManual: () -> Unit,
+) {
+    FloatingActionButtonMenu(
+        expanded = expanded,
+        button = {
+            ToggleFloatingActionButton(
+                checked = expanded,
+                onCheckedChange = onExpandedChange,
+                modifier = Modifier.semantics { contentDescription = if (expanded) "Close menu" else "Add recipe" },
+            ) {
+                val icon = if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    modifier = with(ToggleFloatingActionButtonDefaults) { Modifier.animateIcon({ checkedProgress }) },
+                )
+            }
+        },
+    ) {
+        FloatingActionButtonMenuItem(
+            onClick = onLink,
+            icon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+            text = { Text("From a link") },
+        )
+        FloatingActionButtonMenuItem(
+            onClick = onManual,
+            icon = { Icon(Icons.Outlined.EditNote, contentDescription = null) },
+            text = { Text("Write it myself") },
         )
     }
 }
@@ -291,7 +311,7 @@ private fun RecipeCard(recipe: Recipe, onClick: () -> Unit, onFavorite: () -> Un
         Column(Modifier.padding(12.dp)) {
             Text(
                 recipe.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -318,7 +338,7 @@ private fun EmptyLibrary(onPaste: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
-        Text("Your recipe box is empty", style = MaterialTheme.typography.titleLarge)
+        Text("Your recipe box is empty", style = MaterialTheme.typography.headlineSmallEmphasized)
         Text(
             "Found something tasty on Instagram or YouTube? Tap Share and pick “Save recipe”. " +
                 "Gemini pulls out the ingredients, steps and nutrition for you.",
@@ -340,9 +360,14 @@ private fun NoMatches(onClear: () -> Unit) {
 
 @Composable
 private fun LinkDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
-    val clipboard = LocalClipboardManager.current
-    var text by rememberSaveable {
-        mutableStateOf(LinkResolver.extractUrl(clipboard.getText()?.text).orEmpty())
+    val clipboard = LocalClipboard.current
+    var text by rememberSaveable { mutableStateOf("") }
+    // Prefill with a link from the clipboard, if there is one.
+    LaunchedEffect(Unit) {
+        if (text.isEmpty()) {
+            val copied = runCatching { clipboard.getClipEntry()?.clipData?.getItemAt(0)?.text?.toString() }.getOrNull()
+            LinkResolver.extractUrl(copied)?.let { text = it }
+        }
     }
     val url = LinkResolver.extractUrl(text)
     AlertDialog(

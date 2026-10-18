@@ -1,5 +1,7 @@
 package com.stephenjoy.recipes.ui.detail
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +47,11 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -57,23 +64,21 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -90,6 +95,7 @@ import com.stephenjoy.recipes.domain.displayAmount
 import com.stephenjoy.recipes.domain.formatDuration
 import com.stephenjoy.recipes.ui.components.RecipeImage
 import com.stephenjoy.recipes.ui.components.SectionTitle
+import com.stephenjoy.recipes.ui.components.ShapeBadge
 import com.stephenjoy.recipes.ui.components.StatBlock
 import com.stephenjoy.recipes.ui.components.icon
 import kotlin.math.roundToInt
@@ -103,7 +109,7 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
 
     if (recipe == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (state.loading) CircularProgressIndicator() else Text("This recipe no longer exists")
+            if (state.loading) LoadingIndicator() else Text("This recipe no longer exists")
         }
         return
     }
@@ -124,7 +130,7 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = padding.calculateBottomPadding() + 96.dp),
+                contentPadding = PaddingValues(bottom = padding.calculateBottomPadding() + 96.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item { RecipeImage(recipe, Modifier.fillMaxWidth().height(300.dp)) }
@@ -275,7 +281,7 @@ fun RecipeDetailScreen(recipeId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
 @Composable
 private fun Header(recipe: Recipe, onOpenSource: () -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(recipe.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        Text(recipe.title, style = MaterialTheme.typography.headlineMediumEmphasized)
         if (recipe.sourceUrl.isNotBlank()) {
             Row(
                 Modifier.clickable(onClick = onOpenSource),
@@ -344,36 +350,30 @@ private fun ServingsCard(
                         )
                     }
                 }
-                FilledTonalIconButton(onClick = { onStep(-1) }, enabled = state.servings > 1.0001) {
+                FilledTonalIconButton(onClick = { onStep(-1) }, shapes = IconButtonDefaults.shapes(), enabled = state.servings > 1.0001) {
                     Icon(Icons.Filled.Remove, contentDescription = "Fewer servings")
                 }
                 Text(
                     state.servingsLabel,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.headlineSmallEmphasized,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.widthIn(min = 48.dp).padding(horizontal = 8.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
-                FilledTonalIconButton(onClick = { onStep(1) }) {
+                FilledTonalIconButton(onClick = { onStep(1) }, shapes = IconButtonDefaults.shapes()) {
                     Icon(Icons.Filled.Add, contentDescription = "More servings")
                 }
             }
             val presets = listOf(0.5, 1.0, 1.5, 2.0, 3.0)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                presets.forEachIndexed { i, f ->
-                    SegmentedButton(
-                        selected = kotlin.math.abs(state.factor - f) < 1e-6,
-                        onClick = { onFactor(f) },
-                        shape = SegmentedButtonDefaults.itemShape(i, presets.size),
-                        icon = {},
-                    ) { Text(Scaling.formatFactor(f)) }
-                }
-            }
+            ConnectedToggleGroup(
+                labels = presets.map { Scaling.formatFactor(it) },
+                selectedIndex = presets.indexOfFirst { kotlin.math.abs(state.factor - it) < 1e-6 },
+                onSelect = { onFactor(presets[it]) },
+            )
             if (state.isScaled) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onReset) { Text("Reset") }
-                    FilledTonalButton(onClick = onSaveAsBase) { Text("Save as new amounts") }
+                    TextButton(onClick = onReset, shapes = ButtonDefaults.shapes()) { Text("Reset") }
+                    FilledTonalButton(onClick = onSaveAsBase, shapes = ButtonDefaults.shapes()) { Text("Save as new amounts") }
                 }
             }
         }
@@ -432,14 +432,7 @@ private fun StepRow(index: Int, step: String, done: Boolean, onToggle: () -> Uni
         Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Surface(
-            shape = CircleShape,
-            color = if (done) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
-            contentColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) { Text("${index + 1}", style = MaterialTheme.typography.labelLarge) }
-        }
+        ShapeBadge("${index + 1}", done = done)
         Text(
             step,
             style = MaterialTheme.typography.bodyLarge,
@@ -454,20 +447,17 @@ private fun StepRow(index: Int, step: String, done: Boolean, onToggle: () -> Uni
 private fun NutritionCard(nutrition: Nutrition, forAll: Boolean, servingsLabel: String, onForAll: (Boolean) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp)) {
         SectionTitle("Nutrition")
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(selected = !forAll, onClick = { onForAll(false) }, shape = SegmentedButtonDefaults.itemShape(0, 2)) {
-                Text("Per serving")
-            }
-            SegmentedButton(selected = forAll, onClick = { onForAll(true) }, shape = SegmentedButtonDefaults.itemShape(1, 2)) {
-                Text("All $servingsLabel servings")
-            }
-        }
+        ConnectedToggleGroup(
+            labels = listOf("Per serving", "All $servingsLabel servings"),
+            selectedIndex = if (forAll) 1 else 0,
+            onSelect = { onForAll(it == 1) },
+        )
         Spacer(Modifier.height(12.dp))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp)) {
                 nutrition.calories?.let {
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("${it.roundToInt()}", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
+                        Text("${it.roundToInt()}", style = MaterialTheme.typography.displaySmallEmphasized)
                         Spacer(Modifier.width(6.dp))
                         Text("kcal", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 6.dp))
                     }
@@ -493,6 +483,31 @@ private fun NutritionCard(nutrition: Nutrition, forAll: Boolean, servingsLabel: 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+            }
+        }
+    }
+}
+
+/** Material 3 Expressive connected button group: single selection, shapes morph on press/check. */
+@Composable
+private fun ConnectedToggleGroup(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+    ) {
+        labels.forEachIndexed { index, label ->
+            ToggleButton(
+                checked = index == selectedIndex,
+                onCheckedChange = { onSelect(index) },
+                shapes = when (index) {
+                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                    labels.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                },
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
+            ) {
+                Text(label, maxLines = 1)
             }
         }
     }
@@ -550,7 +565,7 @@ private fun ScaleIngredientDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { parsed?.let(onApply) }, enabled = parsed != null && parsed > 0.0) { Text("Adjust recipe") }
+            Button(onClick = { parsed?.let(onApply) }, shapes = ButtonDefaults.shapes(), enabled = parsed != null && parsed > 0.0) { Text("Adjust recipe") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

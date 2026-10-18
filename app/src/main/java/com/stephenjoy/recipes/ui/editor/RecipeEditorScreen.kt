@@ -1,5 +1,7 @@
 package com.stephenjoy.recipes.ui.editor
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -41,7 +43,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -63,17 +67,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -84,6 +84,7 @@ import coil3.compose.AsyncImage
 import com.stephenjoy.recipes.container
 import com.stephenjoy.recipes.domain.formatDuration
 import com.stephenjoy.recipes.ui.components.SectionTitle
+import com.stephenjoy.recipes.ui.components.ShapeBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,7 +122,7 @@ fun RecipeEditorScreen(recipeId: Long, onBack: () -> Unit, onSaved: (Long) -> Un
                 title = { Text(if (recipeId == 0L) "New recipe" else "Edit recipe") },
                 navigationIcon = { IconButton(onClick = close) { Icon(Icons.Filled.Close, contentDescription = "Close") } },
                 actions = {
-                    Button(onClick = { vm.save(onSaved) }, enabled = s.loaded, modifier = Modifier.padding(end = 8.dp)) {
+                    Button(onClick = { vm.save(onSaved) }, shapes = ButtonDefaults.shapes(), enabled = s.loaded, modifier = Modifier.padding(end = 8.dp)) {
                         Text("Save")
                     }
                 },
@@ -129,7 +130,7 @@ fun RecipeEditorScreen(recipeId: Long, onBack: () -> Unit, onSaved: (Long) -> Un
         },
     ) { padding ->
         if (!s.loaded) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { LoadingIndicator() }
             return@Scaffold
         }
         Column(
@@ -260,7 +261,7 @@ fun RecipeEditorScreen(recipeId: Long, onBack: () -> Unit, onSaved: (Long) -> Un
             )
             if (s.busy != null) {
                 Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    LoadingIndicator(Modifier.size(32.dp))
                     Spacer(Modifier.width(12.dp))
                     Text(s.busy)
                 }
@@ -402,9 +403,9 @@ private fun DurationField(label: String, icon: androidx.compose.ui.graphics.vect
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(label, style = MaterialTheme.typography.titleSmall)
-                    Text(formatDuration(minutes), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(formatDuration(minutes), style = MaterialTheme.typography.titleLargeEmphasized)
                 }
-                FilledTonalIconButton(onClick = { onChange((minutes - 5).coerceAtLeast(0)) }) {
+                FilledTonalIconButton(onClick = { onChange((minutes - 5).coerceAtLeast(0)) }, shapes = IconButtonDefaults.shapes()) {
                     Icon(Icons.Filled.Remove, contentDescription = "Less $label")
                 }
                 OutlinedTextField(
@@ -415,7 +416,7 @@ private fun DurationField(label: String, icon: androidx.compose.ui.graphics.vect
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.widthIn(max = 104.dp).padding(horizontal = 4.dp),
                 )
-                FilledTonalIconButton(onClick = { onChange(minutes + 5) }) {
+                FilledTonalIconButton(onClick = { onChange(minutes + 5) }, shapes = IconButtonDefaults.shapes()) {
                     Icon(Icons.Filled.Add, contentDescription = "More $label")
                 }
             }
@@ -482,14 +483,7 @@ private fun StepEditorRow(
     onRemove: () -> Unit,
 ) {
     Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.Top) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.padding(top = 16.dp).size(28.dp).clip(CircleShape),
-        ) {
-            Box(contentAlignment = Alignment.Center) { Text("${index + 1}", style = MaterialTheme.typography.labelLarge) }
-        }
+        ShapeBadge("${index + 1}", Modifier.padding(top = 12.dp))
         Spacer(Modifier.width(8.dp))
         OutlinedTextField(
             value = text,

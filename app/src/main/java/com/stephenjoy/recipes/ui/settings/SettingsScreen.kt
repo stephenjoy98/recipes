@@ -1,5 +1,7 @@
 package com.stephenjoy.recipes.ui.settings
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.content.Context
 import android.os.Build
 import android.text.format.DateUtils
@@ -27,7 +29,9 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -47,16 +51,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -208,7 +209,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             "Sign in with Google to back up your recipes and keep them in sync across your devices.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        Button(onClick = { vm.signIn(context) }, enabled = !busy) {
+                        Button(onClick = { vm.signIn(context) }, shapes = ButtonDefaults.shapes(), enabled = !busy) {
                             Icon(Icons.Outlined.AccountCircle, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
                             Text("Sign in with Google")
@@ -235,8 +236,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                         )
                         SwitchRow("Back up automatically", "After every change and twice a day", settings.autoBackup, vm::setAutoBackup)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            FilledTonalButton(onClick = vm::backupNow, enabled = !busy) { Text("Back up & sync now") }
-                            OutlinedButton(onClick = vm::signOut, enabled = !busy) {
+                            FilledTonalButton(onClick = vm::backupNow, shapes = ButtonDefaults.shapes(), enabled = !busy) { Text("Back up & sync now") }
+                            OutlinedButton(onClick = vm::signOut, shapes = ButtonDefaults.shapes(), enabled = !busy) {
                                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Sign out")
@@ -244,7 +245,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                if (busy) CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                if (busy) LoadingIndicator(Modifier.size(40.dp))
             }
 
             // ------------------------------------------------------------ Gemini
@@ -315,7 +316,7 @@ private fun SettingsCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(title, style = MaterialTheme.typography.titleMediumEmphasized)
             }
             content()
         }
@@ -348,13 +349,13 @@ private fun NanoStatusRow(status: NanoStatus, onDownload: () -> Unit, onRefresh:
         }
         Text(text, style = MaterialTheme.typography.bodyMedium)
         when (status) {
-            NanoStatus.Downloadable, is NanoStatus.Failed -> FilledTonalButton(onClick = onDownload) {
+            NanoStatus.Downloadable, is NanoStatus.Failed -> FilledTonalButton(onClick = onDownload, shapes = ButtonDefaults.shapes()) {
                 Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Download Gemini Nano")
             }
-            is NanoStatus.Downloading -> androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
-            NanoStatus.Unavailable -> OutlinedButton(onClick = onRefresh) { Text("Check again") }
+            is NanoStatus.Downloading -> LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+            NanoStatus.Unavailable -> OutlinedButton(onClick = onRefresh, shapes = ButtonDefaults.shapes()) { Text("Check again") }
             else -> Unit
         }
     }
