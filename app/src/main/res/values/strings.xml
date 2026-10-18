@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Recipe Box</string>
+    <string name="share_target_label">Save recipe</string>
+    <string name="import_label">Import recipes</string>
+</resources>
