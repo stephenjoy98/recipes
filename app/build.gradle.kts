@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -15,7 +14,7 @@ if (file("google-services.json").exists()) {
 
 android {
     namespace = "com.stephenjoy.recipes"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.stephenjoy.recipes"
@@ -50,8 +49,8 @@ android {
     }
 }
 
+// AGP 9 compiles Kotlin itself (built-in Kotlin), so there is no separate kotlin-android plugin.
 kotlin {
-    jvmToolchain(17)
     compilerOptions {
         optIn.addAll(
             "androidx.compose.material3.ExperimentalMaterial3Api",

@@ -47,7 +47,7 @@ app/src/main/java/com/stephenjoy/recipes/
 
 ## Building
 
-Requirements: Android Studio (Narwhal or newer) / JDK 17, Android SDK 36.
+Requirements: a recent Android Studio with Android Gradle Plugin 9.1 support, JDK 17, Android SDK 37.
 
 ```bash
 ./gradlew assembleDebug        # APK in app/build/outputs/apk/debug/
